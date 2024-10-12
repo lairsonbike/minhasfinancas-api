@@ -3,6 +3,7 @@ package com.udemy.minhasfinancas.service.impl;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.udemy.minhasfinancas.exception.RegraNegocioException;
 import com.udemy.minhasfinancas.model.entity.Lancamento;
 import com.udemy.minhasfinancas.model.enums.StatusLancamento;
+import com.udemy.minhasfinancas.model.enums.TipoLancamento;
 import com.udemy.minhasfinancas.model.repository.LancamentoRepository;
 import com.udemy.minhasfinancas.service.LancamentoService;
 
@@ -29,6 +31,7 @@ public class LancamentoServiceImpl implements LancamentoService {
 	@Transactional
 	public Lancamento salvar(Lancamento lancamento) {
 		validar(lancamento);
+		lancamento.setStatus(StatusLancamento.PENDENTE);
 		return repository.save(lancamento);
 	}
 
@@ -37,7 +40,6 @@ public class LancamentoServiceImpl implements LancamentoService {
 	public Lancamento atualizar(Lancamento lancamento) {
 		Objects.requireNonNull(lancamento.getId());//Caso o lançamento não tenha um ID, ou seja, não esteja cadastrado para atualizar, ele retorna erro.
 		validar(lancamento);
-		lancamento.setStatus(StatusLancamento.PENDENTE);
 		return repository.save(lancamento);
 	}
 
@@ -96,4 +98,33 @@ public class LancamentoServiceImpl implements LancamentoService {
 		
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<Lancamento> obterPorId(Long id) {
+		return repository.findById(id);
+	}
+
+	@Override
+	public BigDecimal obterSaldoPorUsuario(Long id) {
+		BigDecimal receitas = repository.obterSaldoPorTipoLancamentoEUsuario(id, TipoLancamento.RECEITA);
+		BigDecimal despesas = repository.obterSaldoPorTipoLancamentoEUsuario(id, TipoLancamento.DESPESA);
+		
+		if(receitas == null) {
+			receitas = BigDecimal.ZERO;
+		}
+		if(despesas == null) {
+			despesas = BigDecimal.ZERO;
+		}
+		return receitas.subtract(despesas);
+	}
+
 }
+
+
+
+
+
+
+
+
+
